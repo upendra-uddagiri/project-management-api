@@ -1,0 +1,38 @@
+# environment
+.env
+.venv/
+venv/
+env/
+
+# python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+
+# database
+*.db
+*.sqlite3
+
+# uploads
+uploads/*
+!uploads/.gitkeep
+
+# alembic
+alembic/versions/*.pyc
+
+# testing
+.pytest_cache/
+.coverage
+htmlcov/
+
+# ide
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# os
+.DS_Store
+Thumbs.db
