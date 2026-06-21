@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>FlowBoard — Task</title>
+<link rel="stylesheet" href="css/style.css"/>
+<style>
+  .task-header-card {
+    background:var(--bg-surface); border:1px solid var(--border);
+    border-radius:var(--radius-lg); padding:28px 32px; margin-bottom:24px;
+  }
+  .task-header-card .top { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px; }
+  .task-header-card h1   { font-size:1.4rem; max-width:700px; line-height:1.35; }
+
+  .edit-field { cursor:pointer; padding:8px 10px; border-radius:var(--radius-sm); transition:var(--ease); }
+  .edit-field:hover { background:var(--bg-elevated); }
+
+  .attachment-list { display:flex; flex-direction:column; gap:8px; margin-top:12px; }
+  .attachment-item {
+    display:flex; align-items:center; justify-content:space-between;
+    background:var(--bg-elevated); border-radius:var(--radius-sm);
+    padding:10px 14px; font-size:0.82rem;
+  }
+  .attachment-item a { color:var(--color-primary); text-decoration:none; }
+  .attachment-item a:hover { text-decoration:underline; }
+  .attachment-size { color:var(--text-muted); }
+
+  .comment-box { margin-top:16px; }
+  .comment-box textarea { min-height:70px; }
+</style>
+</head>
+<body>
+<div class="layout">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="brand">⬡ FlowBoard</div>
+      <div class="tagline">Project Management</div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">Workspace</div>
+      <a class="nav-item" href="dashboard.html"><span class="nav-icon">⊞</span> Dashboard</a>
+      <a class="nav-item" href="profile.html"><span class="nav-icon">◎</span> My Profile</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-chip">
+        <div class="avatar" id="sidebar-avatar">?</div>
+        <div class="info">
+          <p id="sidebar-name">Loading…</p>
+          <span id="sidebar-role">member</span>
+        </div>
+      </div>
+      <button class="nav-item text-danger" onclick="AUTH.logout()" style="margin-top:6px;">
+        <span class="nav-icon">⇤</span> Sign Out
+      </button>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <main class="main">
+    <a class="back-link" id="back-link" href="dashboard.html">← Back to Project</a>
+
+    <div id="page-alert" class="alert"></div>
+
+    <!-- Task header -->
+    <div class="task-header-card" id="task-header">
+      <div class="loading">Loading task…</div>
+    </div>
+
+    <!-- Two-column layout -->
+    <div class="detail-grid">
+
+      <!-- Left: Description + Comments + Attachments -->
+      <div class="detail-main">
+
+        <!-- Description -->
+        <div class="section-card">
+          <div class="section-header">
+            <h3>Description</h3>
+            <button class="btn btn-ghost btn-sm" onclick="openModal('edit-modal')">Edit Task</button>
+          </div>
+          <p id="task-desc-display" style="font-size:.875rem;line-height:1.7;">—</p>
+        </div>
+
+        <!-- Comments -->
+        <div class="section-card">
+          <div class="section-header">
+            <h3>Comments</h3>
+            <span id="comment-count" class="badge badge-todo">0</span>
+          </div>
+          <div id="comment-list" class="comment-list"><div class="loading">Loading comments…</div></div>
+
+          <div class="comment-box">
+            <div id="comment-alert" class="alert"></div>
+            <div class="form-group">
+              <textarea id="comment-input" class="form-textarea" placeholder="Write a comment…"></textarea>
+            </div>
+            <button id="comment-btn" data-label="Post Comment" class="btn btn-primary btn-sm" onclick="postComment()">Post Comment</button>
+          </div>
+        </div>
+
+        <!-- Attachments -->
+        <div class="section-card">
+          <div class="section-header">
+            <h3>Attachments</h3>
+          </div>
+          <div>
+            <input type="file" id="file-input" style="display:none" onchange="uploadFile()"/>
+            <button class="btn btn-ghost btn-sm" onclick="document.getElementById('file-input').click()">↑ Upload File</button>
+          </div>
+          <div id="attachment-list" class="attachment-list"></div>
+          <div id="upload-alert" class="alert mt-8"></div>
+        </div>
+
+      </div>
+
+      <!-- Right: Task metadata -->
+      <div class="detail-side">
+
+        <!-- Status & details -->
+        <div class="section-card">
+          <h3 style="margin-bottom:14px;">Task Details</h3>
+          <div class="meta-list" id="task-meta">
+            <div class="loading">…</div>
+          </div>
+        </div>
+
+        <!-- Update status -->
+        <div class="section-card">
+          <h3 style="margin-bottom:14px;">Update Status</h3>
+          <div class="form-group">
+            <select id="status-select" class="form-select" onchange="updateStatus()">
+              <option value="todo">To Do</option>
+              <option value="in_progress">In Progress</option>
+              <option value="in_review">In Review</option>
+              <option value="done">Done</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Assign task -->
+        <div class="section-card">
+          <h3 style="margin-bottom:14px;">Assign Task</h3>
+          <div id="assign-alert" class="alert"></div>
+          <div class="form-group">
+            <label class="form-label">Assignee User ID</label>
+            <input id="assign-uid" type="text" class="form-input" placeholder="Paste user UUID"/>
+          </div>
+          <button id="assign-btn" data-label="Assign" class="btn btn-primary btn-full" onclick="assignTask()">Assign</button>
+        </div>
+
+        <!-- Danger zone -->
+        <div class="section-card" style="border-color:rgba(239,68,68,.2);">
+          <h3 style="margin-bottom:14px; color:var(--color-danger);">Danger Zone</h3>
+          <button class="btn btn-danger btn-full" onclick="deleteTask()">Delete Task</button>
+        </div>
+
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- Edit task modal -->
+<div class="modal-overlay" id="edit-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Edit Task</h3>
+      <button class="modal-close" onclick="closeModal('edit-modal')">✕</button>
+    </div>
+    <div id="edit-alert" class="alert"></div>
+    <div class="form-group">
+      <label class="form-label">Title *</label>
+      <input id="edit-title" type="text" class="form-input"/>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Description</label>
+      <textarea id="edit-desc" class="form-textarea"></textarea>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Due Date</label>
+      <input id="edit-due" type="datetime-local" class="form-input"/>
+    </div>
+    <div style="display:flex;gap:10px;">
+      <button id="edit-btn" data-label="Save Changes" class="btn btn-primary" style="flex:1" onclick="saveTask()">Save Changes</button>
+      <button class="btn btn-ghost" onclick="closeModal('edit-modal')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script src="js/auth.js"></script>
+<script src="js/api.js"></script>
+<script>
+  AUTH.requireAuth();
+  AUTH.populateSidebar();
+
+  const params = new URLSearchParams(window.location.search);
+  const taskId = params.get('id');
+  if (!taskId) window.location.href = 'dashboard.html';
+
+  let task = null;
+  const attachments = [];
+
+  async function loadTask() {
+    try {
+      task = await API.getTask(taskId);
+      renderHeader();
+      renderMeta();
+      document.getElementById('task-desc-display').textContent = task.description || 'No description provided.';
+      document.getElementById('status-select').value = task.status;
+      document.getElementById('back-link').href = `project.html?id=${task.project_id}`;
+      document.title = `FlowBoard — ${task.title}`;
+    } catch(e) {
+      showAlert('page-alert', e.message);
+    }
+  }
+
+  function renderHeader() {
+    document.getElementById('task-header').innerHTML = `
+      <div class="top">
+        <h1>${escHtml(task.title)}</h1>
+        ${statusBadge(task.status)}
+      </div>
+      <div class="flex-center mt-8">
+        <span class="text-muted">Project ID: ${task.project_id.slice(0,8)}…</span>
+        ${task.due_date ? `<span class="text-muted">· Due ${fmtDate(task.due_date)}</span>` : ''}
+      </div>`;
+  }
+
+  function renderMeta() {
+    document.getElementById('task-meta').innerHTML = `
+      <div class="meta-row"><span class="key">Status</span><span class="val">${statusBadge(task.status)}</span></div>
+      <div class="meta-row"><span class="key">Due Date</span><span class="val">${fmtDate(task.due_date)}</span></div>
+      <div class="meta-row"><span class="key">Assignee</span><span class="val">${task.assignee_id ? task.assignee_id.slice(0,8)+'…' : 'Unassigned'}</span></div>
+      <div class="meta-row"><span class="key">Created</span><span class="val">${fmtDate(task.created_at)}</span></div>
+      <div class="meta-row"><span class="key">Updated</span><span class="val">${fmtDate(task.updated_at)}</span></div>`;
+  }
+
+  async function updateStatus() {
+    const status = document.getElementById('status-select').value;
+    try {
+      task = await API.updateTask(taskId, { status });
+      renderHeader();
+      renderMeta();
+      showAlert('page-alert', 'Status updated.', 'success');
+    } catch(e) {
+      showAlert('page-alert', e.message);
+    }
+  }
+
+  async function saveTask() {
+    const title = document.getElementById('edit-title').value.trim();
+    const desc  = document.getElementById('edit-desc').value.trim();
+    const due   = document.getElementById('edit-due').value;
+    if (!title) return showAlert('edit-alert', 'Title is required.');
+    setLoading('edit-btn', true);
+    try {
+      task = await API.updateTask(taskId, {
+        title,
+        description: desc || undefined,
+        due_date: due ? new Date(due).toISOString() : undefined
+      });
+      closeModal('edit-modal');
+      renderHeader();
+      renderMeta();
+      document.getElementById('task-desc-display').textContent = task.description || 'No description provided.';
+      showAlert('page-alert', 'Task updated.', 'success');
+    } catch(e) {
+      showAlert('edit-alert', e.message);
+    } finally {
+      setLoading('edit-btn', false);
+    }
+  }
+
+  function openEditModal() {
+    if (!task) return;
+    document.getElementById('edit-title').value = task.title;
+    document.getElementById('edit-desc').value  = task.description || '';
+    if (task.due_date) {
+      document.getElementById('edit-due').value = task.due_date.slice(0,16);
+    }
+    openModal('edit-modal');
+  }
+  // Patch the edit button to populate modal
+  document.addEventListener('DOMContentLoaded', () => {
+    document.querySelector('[onclick="openModal(\'edit-modal\')"]')?.setAttribute('onclick', 'openEditModal()');
+  });
+
+  async function assignTask() {
+    const uid = document.getElementById('assign-uid').value.trim();
+    if (!uid) return showAlert('assign-alert', 'User ID is required.');
+    setLoading('assign-btn', true);
+    try {
+      task = await API.assignTask(taskId, uid);
+      renderMeta();
+      document.getElementById('assign-uid').value = '';
+      showAlert('page-alert', 'Task assigned!', 'success');
+    } catch(e) {
+      showAlert('assign-alert', e.message);
+    } finally {
+      setLoading('assign-btn', false);
+    }
+  }
+
+  async function deleteTask() {
+    if (!confirm('Delete this task permanently?')) return;
+    try {
+      await API.deleteTask(taskId);
+      window.location.href = task ? `project.html?id=${task.project_id}` : 'dashboard.html';
+    } catch(e) {
+      showAlert('page-alert', e.message);
+    }
+  }
+
+  // ── Comments ──────────────────────────────────────────────────────────────
+  async function loadComments() {
+    const el = document.getElementById('comment-list');
+    try {
+      const comments = await API.getComments(taskId) || [];
+      document.getElementById('comment-count').textContent = comments.length;
+      if (!comments.length) {
+        el.innerHTML = `<div class="empty-state" style="padding:24px 0;">
+          <div class="icon" style="font-size:1.5rem;">💬</div>
+          <p>No comments yet. Be the first!</p></div>`;
+        return;
+      }
+      el.innerHTML = comments.map(c => `
+        <div class="comment">
+          <div class="comment-header">
+            <span class="comment-author">${c.author_id.slice(0,8)}…</span>
+            <div class="flex-center">
+              <span class="comment-date">${fmtDate(c.created_at)}</span>
+              <button class="btn btn-danger btn-sm" style="padding:3px 8px;" onclick="deleteComment('${c.id}')">✕</button>
+            </div>
+          </div>
+          <p class="comment-body">${escHtml(c.content)}</p>
+        </div>`).join('');
+    } catch(e) {
+      el.innerHTML = `<p class="text-danger">${e.message}</p>`;
+    }
+  }
+
+  async function postComment() {
+    const content = document.getElementById('comment-input').value.trim();
+    if (!content) return showAlert('comment-alert', 'Comment cannot be empty.');
+    setLoading('comment-btn', true);
+    try {
+      await API.createComment(taskId, content);
+      document.getElementById('comment-input').value = '';
+      await loadComments();
+    } catch(e) {
+      showAlert('comment-alert', e.message);
+    } finally {
+      setLoading('comment-btn', false);
+    }
+  }
+
+  async function deleteComment(id) {
+    if (!confirm('Delete this comment?')) return;
+    try {
+      await API.deleteComment(id);
+      await loadComments();
+    } catch(e) {
+      showAlert('page-alert', e.message);
+    }
+  }
+
+  // ── Attachments ───────────────────────────────────────────────────────────
+  async function uploadFile() {
+    const file = document.getElementById('file-input').files[0];
+    if (!file) return;
+    try {
+      const result = await API.uploadAttachment(taskId, file);
+      attachments.push(result);
+      renderAttachments();
+      showAlert('upload-alert', 'File uploaded!', 'success');
+    } catch(e) {
+      showAlert('upload-alert', e.message);
+    }
+    document.getElementById('file-input').value = '';
+  }
+
+  function renderAttachments() {
+    const el = document.getElementById('attachment-list');
+    if (!attachments.length) { el.innerHTML = '<p class="text-muted mt-8">No attachments yet.</p>'; return; }
+    el.innerHTML = attachments.map(a => `
+      <div class="attachment-item">
+        <a href="http://localhost:8000${a.url}" target="_blank">📎 ${escHtml(a.original_filename)}</a>
+        <span class="attachment-size">${(a.size_bytes / 1024).toFixed(1)} KB</span>
+      </div>`).join('');
+  }
+
+  function escHtml(str) {
+    if (!str) return '';
+    return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  // Init
+  loadTask();
+  loadComments();
+  renderAttachments();
+</script>
+</body>
+</html>

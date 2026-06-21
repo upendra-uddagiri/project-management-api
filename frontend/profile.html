@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>FlowBoard — Profile</title>
+<link rel="stylesheet" href="css/style.css"/>
+<style>
+  .profile-hero {
+    background:linear-gradient(135deg, var(--bg-surface) 0%, #1e2235 100%);
+    border:1px solid var(--border); border-radius:var(--radius-lg);
+    padding:32px; margin-bottom:28px;
+    display:flex; align-items:center; gap:24px;
+  }
+  .profile-info h2 { margin-bottom:4px; }
+  .profile-info p  { font-size:0.875rem; }
+  .profile-grid { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+  @media(max-width:700px) { .profile-grid { grid-template-columns:1fr; } }
+</style>
+</head>
+<body>
+<div class="layout">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="brand">⬡ FlowBoard</div>
+      <div class="tagline">Project Management</div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">Workspace</div>
+      <a class="nav-item" href="dashboard.html"><span class="nav-icon">⊞</span> Dashboard</a>
+      <a class="nav-item active" href="profile.html"><span class="nav-icon">◎</span> My Profile</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-chip">
+        <div class="avatar" id="sidebar-avatar">?</div>
+        <div class="info">
+          <p id="sidebar-name">Loading…</p>
+          <span id="sidebar-role">member</span>
+        </div>
+      </div>
+      <button class="nav-item text-danger" onclick="AUTH.logout()" style="margin-top:6px;">
+        <span class="nav-icon">⇤</span> Sign Out
+      </button>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <main class="main">
+    <div class="page-header">
+      <div class="titles"><h1>My Profile</h1><p>View and update your account details</p></div>
+    </div>
+
+    <div id="page-alert" class="alert"></div>
+
+    <!-- Profile hero -->
+    <div class="profile-hero" id="profile-hero">
+      <div class="loading">Loading profile…</div>
+    </div>
+
+    <!-- Profile grid -->
+    <div class="profile-grid">
+
+      <!-- Update info -->
+      <div class="section-card">
+        <h3 style="margin-bottom:18px;">Update Information</h3>
+        <div id="info-alert" class="alert"></div>
+        <div class="form-group">
+          <label class="form-label">Full Name</label>
+          <input id="upd-name" type="text" class="form-input"/>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Email Address</label>
+          <input id="upd-email" type="email" class="form-input"/>
+        </div>
+        <button id="info-btn" data-label="Save Changes" class="btn btn-primary" onclick="updateInfo()">Save Changes</button>
+      </div>
+
+      <!-- Change password -->
+      <div class="section-card">
+        <h3 style="margin-bottom:18px;">Change Password</h3>
+        <div id="pwd-alert" class="alert"></div>
+        <div class="form-group">
+          <label class="form-label">New Password</label>
+          <input id="new-pwd" type="password" class="form-input" placeholder="Min. 8 characters"/>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Confirm New Password</label>
+          <input id="confirm-pwd" type="password" class="form-input" placeholder="Repeat password"/>
+        </div>
+        <button id="pwd-btn" data-label="Update Password" class="btn btn-primary" onclick="updatePassword()">Update Password</button>
+      </div>
+
+      <!-- Account info (read-only) -->
+      <div class="section-card">
+        <h3 style="margin-bottom:14px;">Account Details</h3>
+        <div class="meta-list" id="account-meta">
+          <div class="loading">…</div>
+        </div>
+      </div>
+
+      <!-- Danger zone -->
+      <div class="section-card" style="border-color:rgba(239,68,68,.2);">
+        <h3 style="margin-bottom:8px;color:var(--color-danger);">Danger Zone</h3>
+        <p style="margin-bottom:16px;font-size:.82rem;">These actions are permanent and cannot be undone.</p>
+        <button class="btn btn-danger btn-full" onclick="AUTH.logout()">Sign Out of All Sessions</button>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<script src="js/auth.js"></script>
+<script src="js/api.js"></script>
+<script>
+  AUTH.requireAuth();
+  AUTH.populateSidebar();
+
+  let user = null;
+
+  async function loadProfile() {
+    try {
+      user = await API.getMe();
+      AUTH.setUser(user);
+      renderHero();
+      renderMeta();
+      document.getElementById('upd-name').value  = user.full_name;
+      document.getElementById('upd-email').value = user.email;
+    } catch(e) {
+      showAlert('page-alert', e.message);
+    }
+  }
+
+  function renderHero() {
+    document.getElementById('profile-hero').innerHTML = `
+      <div class="avatar-lg">${AUTH.initials(user.full_name)}</div>
+      <div class="profile-info">
+        <h2>${escHtml(user.full_name)}</h2>
+        <p>${escHtml(user.email)}</p>
+        <div class="flex-center mt-8">
+          <span class="badge badge-${user.role}">${user.role}</span>
+          <span class="badge ${user.is_active ? 'badge-active' : 'badge-archived'}">${user.is_active ? 'Active' : 'Inactive'}</span>
+        </div>
+      </div>`;
+  }
+
+  function renderMeta() {
+    document.getElementById('account-meta').innerHTML = `
+      <div class="meta-row"><span class="key">User ID</span><span class="val" style="font-size:.75rem;font-family:monospace;">${user.id}</span></div>
+      <div class="meta-row"><span class="key">Role</span><span class="val">${user.role}</span></div>
+      <div class="meta-row"><span class="key">Status</span><span class="val">${user.is_active ? 'Active' : 'Inactive'}</span></div>
+      <div class="meta-row"><span class="key">Joined</span><span class="val">${fmtDate(user.created_at)}</span></div>
+      <div class="meta-row"><span class="key">Last Updated</span><span class="val">${fmtDate(user.updated_at)}</span></div>`;
+  }
+
+  async function updateInfo() {
+    const name  = document.getElementById('upd-name').value.trim();
+    const email = document.getElementById('upd-email').value.trim();
+    if (!name || !email) return showAlert('info-alert', 'Name and email are required.');
+    setLoading('info-btn', true);
+    try {
+      user = await API.updateMe({ full_name: name, email });
+      AUTH.setUser(user);
+      AUTH.populateSidebar();
+      renderHero();
+      showAlert('info-alert', 'Profile updated successfully.', 'success');
+    } catch(e) {
+      showAlert('info-alert', e.message);
+    } finally {
+      setLoading('info-btn', false);
+    }
+  }
+
+  async function updatePassword() {
+    const pwd     = document.getElementById('new-pwd').value;
+    const confirm = document.getElementById('confirm-pwd').value;
+    if (!pwd)          return showAlert('pwd-alert', 'New password is required.');
+    if (pwd.length < 8) return showAlert('pwd-alert', 'Password must be at least 8 characters.');
+    if (pwd !== confirm) return showAlert('pwd-alert', 'Passwords do not match.');
+    setLoading('pwd-btn', true);
+    try {
+      await API.updateMe({ password: pwd });
+      document.getElementById('new-pwd').value     = '';
+      document.getElementById('confirm-pwd').value = '';
+      showAlert('pwd-alert', 'Password changed successfully.', 'success');
+    } catch(e) {
+      showAlert('pwd-alert', e.message);
+    } finally {
+      setLoading('pwd-btn', false);
+    }
+  }
+
+  function escHtml(str) {
+    if (!str) return '';
+    return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  loadProfile();
+</script>
+</body>
+</html>

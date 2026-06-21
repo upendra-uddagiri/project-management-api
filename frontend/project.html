@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>FlowBoard — Project</title>
+<link rel="stylesheet" href="css/style.css"/>
+<style>
+  .project-hero {
+    background:linear-gradient(135deg, var(--bg-surface) 0%, #1e2235 100%);
+    border:1px solid var(--border); border-radius:var(--radius-lg);
+    padding:28px 32px; margin-bottom:28px; position:relative; overflow:hidden;
+  }
+  .project-hero::before {
+    content:''; position:absolute; top:-60px; right:-60px;
+    width:200px; height:200px; border-radius:50%;
+    background:radial-gradient(circle, rgba(99,102,241,.15) 0%, transparent 70%);
+  }
+  .hero-top { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px; }
+  .hero-top h1 { font-size:1.5rem; position:relative; z-index:1; }
+  .hero-desc { color:var(--text-secondary); font-size:0.9rem; max-width:600px; line-height:1.7; }
+
+  .two-col { display:grid; grid-template-columns:1fr 300px; gap:24px; align-items:start; }
+  .section-card { background:var(--bg-surface); border:1px solid var(--border); border-radius:var(--radius); padding:20px; }
+</style>
+</head>
+<body>
+<div class="layout">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="brand">⬡ FlowBoard</div>
+      <div class="tagline">Project Management</div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">Workspace</div>
+      <a class="nav-item" href="dashboard.html"><span class="nav-icon">⊞</span> Dashboard</a>
+      <a class="nav-item" href="profile.html"><span class="nav-icon">◎</span> My Profile</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-chip">
+        <div class="avatar" id="sidebar-avatar">?</div>
+        <div class="info">
+          <p id="sidebar-name">Loading…</p>
+          <span id="sidebar-role">member</span>
+        </div>
+      </div>
+      <button class="nav-item text-danger" onclick="AUTH.logout()" style="margin-top:6px;">
+        <span class="nav-icon">⇤</span> Sign Out
+      </button>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <main class="main">
+    <a class="back-link" href="dashboard.html">← Back to Dashboard</a>
+
+    <!-- Project hero -->
+    <div class="project-hero" id="project-hero">
+      <div class="loading">Loading project…</div>
+    </div>
+
+    <div id="page-alert" class="alert"></div>
+
+    <div class="two-col">
+      <!-- Tasks -->
+      <div>
+        <!-- Filter bar -->
+        <div class="filter-bar">
+          <select class="form-select" id="filter-status" onchange="loadTasks()">
+            <option value="">All Statuses</option>
+            <option value="todo">To Do</option>
+            <option value="in_progress">In Progress</option>
+            <option value="in_review">In Review</option>
+            <option value="done">Done</option>
+          </select>
+          <select class="form-select" id="filter-sort" onchange="loadTasks()">
+            <option value="created_at">Sort: Date Created</option>
+            <option value="due_date">Sort: Due Date</option>
+          </select>
+          <select class="form-select" id="filter-order" onchange="loadTasks()">
+            <option value="asc">↑ Asc</option>
+            <option value="desc">↓ Desc</option>
+          </select>
+          <button class="btn btn-primary btn-sm" onclick="openModal('task-modal')" style="margin-left:auto;">＋ Add Task</button>
+        </div>
+
+        <!-- Task list -->
+        <div id="task-list" class="task-list">
+          <div class="loading">Loading tasks…</div>
+        </div>
+      </div>
+
+      <!-- Sidebar panels -->
+      <div style="display:flex;flex-direction:column;gap:16px;">
+
+        <!-- Project details -->
+        <div class="section-card">
+          <div class="section-header">
+            <h3>Project Info</h3>
+          </div>
+          <div class="meta-list" id="project-meta">
+            <div class="loading">…</div>
+          </div>
+        </div>
+
+        <!-- Members -->
+        <div class="section-card">
+          <div class="section-header">
+            <h3>Members</h3>
+            <button class="btn btn-ghost btn-sm" onclick="openModal('member-modal')">+ Add</button>
+          </div>
+          <div id="members-list"><div class="loading">…</div></div>
+        </div>
+
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- Add task modal -->
+<div class="modal-overlay" id="task-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>New Task</h3>
+      <button class="modal-close" onclick="closeModal('task-modal')">✕</button>
+    </div>
+    <div id="task-alert" class="alert"></div>
+    <div class="form-group">
+      <label class="form-label">Title *</label>
+      <input id="task-title" type="text" class="form-input" placeholder="e.g. Design homepage mockup"/>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Description</label>
+      <textarea id="task-desc" class="form-textarea" placeholder="What needs to be done?"></textarea>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Due Date</label>
+        <input id="task-due" type="datetime-local" class="form-input"/>
+      </div>
+    </div>
+    <button id="task-btn" data-label="Create Task" class="btn btn-primary btn-full" onclick="createTask()">Create Task</button>
+  </div>
+</div>
+
+<!-- Add member modal -->
+<div class="modal-overlay" id="member-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Add Member</h3>
+      <button class="modal-close" onclick="closeModal('member-modal')">✕</button>
+    </div>
+    <div id="member-alert" class="alert"></div>
+    <div class="form-group">
+      <label class="form-label">User ID *</label>
+      <input id="member-uid" type="text" class="form-input" placeholder="Paste the user's UUID"/>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Role</label>
+      <select id="member-role" class="form-select">
+        <option value="member">Member</option>
+        <option value="manager">Manager</option>
+        <option value="admin">Admin</option>
+      </select>
+    </div>
+    <button id="member-btn" data-label="Add Member" class="btn btn-primary btn-full" onclick="addMember()">Add Member</button>
+  </div>
+</div>
+
+<script src="js/auth.js"></script>
+<script src="js/api.js"></script>
+<script>
+  AUTH.requireAuth();
+  AUTH.populateSidebar();
+
+  const params    = new URLSearchParams(window.location.search);
+  const projectId = params.get('id');
+  if (!projectId) window.location.href = 'dashboard.html';
+
+  let project = null;
+
+  async function loadProject() {
+    try {
+      project = await API.getProject(projectId);
+      renderHero();
+      renderMeta();
+    } catch(e) {
+      showAlert('page-alert', e.message);
+    }
+  }
+
+  function renderHero() {
+    document.title = `FlowBoard — ${project.name}`;
+    document.getElementById('project-hero').innerHTML = `
+      <div class="hero-top">
+        <h1>${escHtml(project.name)}</h1>
+        ${statusBadge(project.status)}
+      </div>
+      <p class="hero-desc">${escHtml(project.description || 'No description provided.')}</p>`;
+  }
+
+  function renderMeta() {
+    document.getElementById('project-meta').innerHTML = `
+      <div class="meta-row"><span class="key">Status</span><span class="val">${statusBadge(project.status)}</span></div>
+      <div class="meta-row"><span class="key">Created</span><span class="val">${fmtDate(project.created_at)}</span></div>
+      <div class="meta-row"><span class="key">Updated</span><span class="val">${fmtDate(project.updated_at)}</span></div>`;
+  }
+
+  async function loadTasks() {
+    const status  = document.getElementById('filter-status').value;
+    const sort_by = document.getElementById('filter-sort').value;
+    const order   = document.getElementById('filter-order').value;
+    const el      = document.getElementById('task-list');
+
+    try {
+      const tasks = await API.getTasks(projectId, { status, sort_by, order }) || [];
+      if (!tasks.length) {
+        el.innerHTML = `<div class="empty-state"><div class="icon">✅</div><h3>No tasks found</h3><p>Add your first task to get started</p></div>`;
+        return;
+      }
+      el.innerHTML = tasks.map(taskCard).join('');
+    } catch(e) {
+      el.innerHTML = `<p class="text-danger">${e.message}</p>`;
+    }
+  }
+
+  function taskCard(t) {
+    const due = t.due_date ? `<span>Due ${fmtDate(t.due_date)}</span>` : '';
+    return `
+      <div class="task-card" onclick="window.location.href='task.html?id=${t.id}'">
+        <div class="task-info">
+          <h4>${escHtml(t.title)}</h4>
+          <div class="meta flex-center">${due}</div>
+        </div>
+        <div class="task-right">
+          ${statusBadge(t.status)}
+        </div>
+      </div>`;
+  }
+
+  async function loadMembers() {
+    // Members come from the project membership list — show project owner at minimum
+    const el = document.getElementById('members-list');
+    el.innerHTML = `<div class="meta-list">
+      <div class="meta-row">
+        <div class="flex-center">
+          <div class="avatar" style="width:24px;height:24px;font-size:.6rem;">O</div>
+          <span style="font-size:.82rem;">Project Owner</span>
+        </div>
+        <span class="badge badge-admin">owner</span>
+      </div>
+    </div>`;
+  }
+
+  async function createTask() {
+    const title = document.getElementById('task-title').value.trim();
+    const desc  = document.getElementById('task-desc').value.trim();
+    const due   = document.getElementById('task-due').value;
+    if (!title) return showAlert('task-alert', 'Task title is required.');
+    setLoading('task-btn', true);
+    try {
+      await API.createTask(projectId, {
+        title,
+        description: desc || undefined,
+        due_date: due ? new Date(due).toISOString() : undefined
+      });
+      closeModal('task-modal');
+      document.getElementById('task-title').value = '';
+      document.getElementById('task-desc').value  = '';
+      document.getElementById('task-due').value   = '';
+      await loadTasks();
+      showAlert('page-alert', 'Task created!', 'success');
+    } catch(e) {
+      showAlert('task-alert', e.message);
+    } finally {
+      setLoading('task-btn', false);
+    }
+  }
+
+  async function addMember() {
+    const uid  = document.getElementById('member-uid').value.trim();
+    const role = document.getElementById('member-role').value;
+    if (!uid) return showAlert('member-alert', 'User ID is required.');
+    setLoading('member-btn', true);
+    try {
+      await API.addMember(projectId, uid, role);
+      closeModal('member-modal');
+      document.getElementById('member-uid').value = '';
+      showAlert('page-alert', 'Member added successfully!', 'success');
+    } catch(e) {
+      showAlert('member-alert', e.message);
+    } finally {
+      setLoading('member-btn', false);
+    }
+  }
+
+  function escHtml(str) {
+    if (!str) return '';
+    return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  // Init
+  loadProject();
+  loadTasks();
+  loadMembers();
+</script>
+</body>
+</html>

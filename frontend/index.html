@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>FlowBoard — Sign In</title>
+<link rel="stylesheet" href="css/style.css"/>
+<style>
+  body { display:flex; align-items:center; justify-content:center; min-height:100vh; }
+
+  .auth-wrapper {
+    display:grid; grid-template-columns:1fr 1fr;
+    width:900px; max-width:100%;
+    border-radius:20px; overflow:hidden;
+    border:1px solid var(--border);
+    box-shadow:0 24px 64px rgba(0,0,0,.5);
+  }
+
+  /* Left panel */
+  .auth-left {
+    background:linear-gradient(145deg, #13162B 0%, #1A1D27 100%);
+    padding:48px 40px;
+    display:flex; flex-direction:column; justify-content:space-between;
+    position:relative; overflow:hidden;
+  }
+  .auth-left::before {
+    content:''; position:absolute; top:-80px; right:-80px;
+    width:280px; height:280px; border-radius:50%;
+    background:radial-gradient(circle, rgba(99,102,241,.25) 0%, transparent 70%);
+  }
+  .auth-left::after {
+    content:''; position:absolute; bottom:-60px; left:-60px;
+    width:200px; height:200px; border-radius:50%;
+    background:radial-gradient(circle, rgba(167,139,250,.18) 0%, transparent 70%);
+  }
+  .left-logo {
+    font-size:1.2rem; font-weight:700;
+    background:linear-gradient(135deg, #6366F1, #A78BFA);
+    -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
+  }
+  .left-headline {
+    position:relative; z-index:1;
+  }
+  .left-headline h1 {
+    font-size:2rem; font-weight:700; line-height:1.25;
+    margin-bottom:14px;
+  }
+  .left-headline p { font-size:0.9rem; line-height:1.7; color:var(--text-secondary); }
+
+  .features { position:relative; z-index:1; }
+  .feature {
+    display:flex; align-items:center; gap:12px;
+    padding:10px 0; border-top:1px solid var(--border);
+    font-size:0.83rem; color:var(--text-secondary);
+  }
+  .feature:last-child { border-bottom:1px solid var(--border); }
+  .feature-dot { width:8px; height:8px; border-radius:50%; background:var(--color-primary); flex-shrink:0; }
+
+  /* Right panel */
+  .auth-right {
+    background:var(--bg-surface); padding:48px 40px;
+    display:flex; flex-direction:column; justify-content:center;
+  }
+  .auth-right h2 { margin-bottom:6px; }
+  .auth-right .sub { color:var(--text-secondary); font-size:0.875rem; margin-bottom:28px; }
+
+  /* Tabs */
+  .tabs { display:flex; gap:4px; background:var(--bg-elevated); border-radius:var(--radius-sm); padding:4px; margin-bottom:24px; }
+  .tab-btn {
+    flex:1; padding:8px; border:none; background:none;
+    color:var(--text-secondary); font-size:0.85rem; font-weight:500;
+    font-family:'Inter',sans-serif; cursor:pointer; border-radius:5px;
+    transition:var(--ease);
+  }
+  .tab-btn.active { background:var(--color-primary); color:#fff; }
+
+  .tab-panel { display:none; }
+  .tab-panel.active { display:block; }
+
+  .divider-text {
+    text-align:center; position:relative; margin:18px 0;
+    font-size:0.78rem; color:var(--text-muted);
+  }
+  .divider-text::before, .divider-text::after {
+    content:''; position:absolute; top:50%;
+    width:calc(50% - 24px); height:1px; background:var(--border);
+  }
+  .divider-text::before { left:0; }
+  .divider-text::after  { right:0; }
+</style>
+</head>
+<body>
+
+<div class="auth-wrapper">
+
+  <!-- Left panel -->
+  <div class="auth-left">
+    <div class="left-logo">⬡ FlowBoard</div>
+
+    <div class="left-headline">
+      <h1>Manage projects with clarity</h1>
+      <p>Organise your team's work, track progress, and deliver on time — all in one place.</p>
+    </div>
+
+    <div class="features">
+      <div class="feature"><span class="feature-dot"></span>JWT-secured authentication</div>
+      <div class="feature"><span class="feature-dot"></span>Projects, tasks &amp; team members</div>
+      <div class="feature"><span class="feature-dot"></span>File attachments &amp; comments</div>
+      <div class="feature"><span class="feature-dot"></span>Role-based access control</div>
+    </div>
+  </div>
+
+  <!-- Right panel -->
+  <div class="auth-right">
+    <h2>Welcome back</h2>
+    <p class="sub">Sign in to your workspace or create a new account.</p>
+
+    <div class="tabs">
+      <button class="tab-btn active" onclick="switchTab('login')">Sign In</button>
+      <button class="tab-btn"        onclick="switchTab('register')">Register</button>
+    </div>
+
+    <!-- Login -->
+    <div id="tab-login" class="tab-panel active">
+      <div id="login-alert" class="alert"></div>
+      <div class="form-group">
+        <label class="form-label">Email address</label>
+        <input id="login-email" type="email" class="form-input" placeholder="you@example.com"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Password</label>
+        <input id="login-password" type="password" class="form-input" placeholder="••••••••"/>
+      </div>
+      <button id="login-btn" data-label="Sign In" class="btn btn-primary btn-full mt-8" onclick="doLogin()">Sign In</button>
+    </div>
+
+    <!-- Register -->
+    <div id="tab-register" class="tab-panel">
+      <div id="register-alert" class="alert"></div>
+      <div class="form-group">
+        <label class="form-label">Full name</label>
+        <input id="reg-name" type="text" class="form-input" placeholder="John Doe"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Email address</label>
+        <input id="reg-email" type="email" class="form-input" placeholder="you@example.com"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Password</label>
+        <input id="reg-password" type="password" class="form-input" placeholder="Min. 8 characters"/>
+      </div>
+      <button id="register-btn" data-label="Create Account" class="btn btn-primary btn-full mt-8" onclick="doRegister()">Create Account</button>
+      <div class="divider-text">Already have an account?</div>
+      <button class="btn btn-ghost btn-full" onclick="switchTab('login')">Sign In instead</button>
+    </div>
+  </div>
+</div>
+
+<script src="js/auth.js"></script>
+<script src="js/api.js"></script>
+<script>
+  // Redirect if already logged in
+  if (AUTH.getToken()) window.location.href = 'dashboard.html';
+
+  function switchTab(name) {
+    document.querySelectorAll('.tab-btn').forEach((b,i) => b.classList.toggle('active', (i===0 && name==='login') || (i===1 && name==='register')));
+    document.getElementById('tab-login').classList.toggle('active', name === 'login');
+    document.getElementById('tab-register').classList.toggle('active', name === 'register');
+  }
+
+  async function doLogin() {
+    const email    = document.getElementById('login-email').value.trim();
+    const password = document.getElementById('login-password').value;
+    if (!email || !password) return showAlert('login-alert', 'Please fill in all fields.');
+    setLoading('login-btn', true);
+    try {
+      const tokens = await API.login(email, password);
+      AUTH.setToken(tokens.access_token);
+      AUTH.setRefresh(tokens.refresh_token);
+      const user = await API.getMe();
+      AUTH.setUser(user);
+      window.location.href = 'dashboard.html';
+    } catch(e) {
+      showAlert('login-alert', e.message);
+    } finally {
+      setLoading('login-btn', false);
+    }
+  }
+
+  async function doRegister() {
+    const name     = document.getElementById('reg-name').value.trim();
+    const email    = document.getElementById('reg-email').value.trim();
+    const password = document.getElementById('reg-password').value;
+    if (!name || !email || !password) return showAlert('register-alert', 'Please fill in all fields.');
+    setLoading('register-btn', true);
+    try {
+      await API.register(name, email, password);
+      showAlert('register-alert', 'Account created! Please sign in.', 'success');
+      setTimeout(() => switchTab('login'), 1500);
+    } catch(e) {
+      showAlert('register-alert', e.message);
+    } finally {
+      setLoading('register-btn', false);
+    }
+  }
+
+  // Allow Enter key to submit
+  document.addEventListener('keydown', e => {
+    if (e.key !== 'Enter') return;
+    if (document.getElementById('tab-login').classList.contains('active')) doLogin();
+    else doRegister();
+  });
+</script>
+</body>
+</html>
